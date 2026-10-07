@@ -8,6 +8,7 @@ on:
       - 'src/**.py'
       - 'params.yaml'
       - 'requirements.txt'
+      - 'infra/aws/**'
       - '.github/workflows/cicd.yml'
   workflow_dispatch:
 

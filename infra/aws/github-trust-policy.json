@@ -10,7 +10,7 @@
       "Condition": {
         "StringEquals": {
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-          "token.actions.githubusercontent.com:sub": "repo:holyspirit2207/K4-L3L4-Track2-Day21-PhamThanhSon-2A202602794-CI-CD-for-AI-Systems:ref:refs/heads/main"
+          "token.actions.githubusercontent.com:sub": "repo:holyspirit2207@208254813/K4-L3L4-Track2-Day21-PhamThanhSon-2A202602794-CI-CD-for-AI-Systems@1408215508:ref:refs/heads/main"
         }
       }
     }
