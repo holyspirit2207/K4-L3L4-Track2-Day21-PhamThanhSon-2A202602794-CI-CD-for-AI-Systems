@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Họ và tên | Phạm Thành Sơn |
+| Họ và tên | Phạm Thanh Sơn |
 | MSSV | 2A202602794 |
 | Lớp / Khóa | K4 |
 | Repo GitHub | https://github.com/holyspirit2207/K4-L3L4-Track2-Day21-PhamThanhSon-2A202602794-CI-CD-for-AI-Systems |
