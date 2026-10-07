@@ -1,0 +1,8 @@
+{
+  "commands": [
+    "cloud-init status --wait",
+    "systemctl is-active income-api",
+    "curl -sf http://localhost:8080/healthz",
+    "curl -sf -X POST http://localhost:8080/score -H 'Content-Type: application/json' -d '{\"features\":[28,2,14,2,11,0,1,0,0,45]}'"
+  ]
+}

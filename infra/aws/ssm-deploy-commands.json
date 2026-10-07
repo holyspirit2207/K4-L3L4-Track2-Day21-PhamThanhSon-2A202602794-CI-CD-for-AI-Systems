@@ -1,0 +1,9 @@
+{
+  "commands": [
+    "aws s3 cp s3://income-lab-147435198681-2a202602794/deploy/current/serve.py /home/ubuntu/income-api/src/serve.py",
+    "chown ubuntu:ubuntu /home/ubuntu/income-api/src/serve.py",
+    "systemctl restart income-api",
+    "sleep 5",
+    "curl -sf http://localhost:8080/healthz"
+  ]
+}

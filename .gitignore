@@ -5,9 +5,11 @@ outputs/
 data/train_batch1.csv
 data/holdout.csv
 data/train_batch2.csv
-sa-key.json
 .env
+*.pem
+income_deploy
 .venv/
+.tools/
 __pycache__/
 *.pyc
 .DS_Store

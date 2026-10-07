@@ -6,6 +6,10 @@ Mục tiêu: Mỗi khi bạn push code hoặc thay đổi dữ liệu, GitHub Ac
 
 ## Lựa Chọn Cloud Provider
 
+> **Cấu hình đang dùng trong repository này là AWS.** Xem hướng dẫn triển khai
+> S3, GitHub OIDC và EC2 tại [`tasks/buoc-2-aws.md`](buoc-2-aws.md). Các ví dụ
+> GCP/Azure bên dưới chỉ còn mang tính tham khảo và không khớp với workflow hiện tại.
+
 Bạn có thể sử dụng **một trong ba** cloud provider sau. Các hướng dẫn trong file này lấy **GCP làm ví dụ mặc định**. Nếu dùng AWS hoặc Azure, ánh xạ theo bảng dưới đây:
 
 | Khái niệm | GCP | AWS | Azure |

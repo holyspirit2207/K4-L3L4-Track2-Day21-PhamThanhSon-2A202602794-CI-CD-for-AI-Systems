@@ -7,7 +7,19 @@ on:
       - 'data/**.dvc'
       - 'src/**.py'
       - 'params.yaml'
+      - 'requirements.txt'
+      - '.github/workflows/cicd.yml'
   workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: ap-southeast-1
+  AWS_ROLE_ARN: arn:aws:iam::147435198681:role/income-lab-github-actions-role
+  ARTIFACT_BUCKET: income-lab-147435198681-2a202602794
+  EC2_INSTANCE_ID: i-086282c0b6146350e
 
 jobs:
 
@@ -25,14 +37,13 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
       - name: Run unit tests
-        # TODO 1: Viet lenh de chay pytest tren thu muc tests/ voi co -v
-        run: # <dien lenh o day>
+        run: pytest tests/ -v
 
 
   # ---------------------------------------------------------------------------
@@ -52,47 +63,43 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Authenticate to Cloud Storage
-        # TODO 2: Ghi noi dung credentials ra file tam va set bien moi truong xac thuc.
-        # GCP:   echo '${{ secrets.STORAGE_CREDENTIALS }}' > /tmp/sa-key.json
-        #        echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa-key.json" >> $GITHUB_ENV
-        # AWS:   echo "AWS_ACCESS_KEY_ID=..." >> $GITHUB_ENV  (lay tu secrets)
-        #        echo "AWS_SECRET_ACCESS_KEY=..." >> $GITHUB_ENV
-        # Azure: echo "AZURE_STORAGE_CONNECTION_STRING=..." >> $GITHUB_ENV
-        run: |
-          # <dien code o day>
+      - name: Authenticate to AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Pull data with DVC
-        # TODO 3: Pull cac file du lieu can thiet tu cloud storage bang lenh dvc pull.
-        #         Chi pull train_batch1.csv va holdout.csv (khong can train_batch2.csv).
-        run: # <dien lenh o day>
+        run: |
+          dvc remote add --force -d labstore "s3://${ARTIFACT_BUCKET}/dvc"
+          dvc pull data/train_batch1.csv.dvc data/holdout.csv.dvc
 
       - name: Train model
         run: python src/train.py
 
       - name: Read report
         id: read_report
-        # TODO 4: Doc gia tri "f1_score" tu outputs/report.json bang Python inline.
-        #         Set ket qua thanh output "f1" de job quality-gate co the doc.
-        #
-        # Goi y:
-        #   F1=$(python -c "import json; d=json.load(open('outputs/report.json')); print(d['f1_score'])")
-        #   echo "f1=$F1" >> $GITHUB_OUTPUT
         run: |
-          # <dien code o day>
+          F1=$(python -c "import json; d=json.load(open('outputs/report.json')); print(d['f1_score'])")
+          echo "f1=$F1" >> "$GITHUB_OUTPUT"
 
-      - name: Upload model to Cloud Storage
-        # TODO 5: Su dung cloud SDK de upload models/model.joblib len
-        #         <bucket>/artifacts/current/model.joblib.
-        #         Ten bucket lay tu secret ARTIFACT_BUCKET.
+      - name: Upload model to Amazon S3
         run: |
           python - <<'PYEOF'
-          # <dien code Python o day>
+          import os
+          import boto3
+
+          bucket = os.environ["ARTIFACT_BUCKET"]
+          key = "artifacts/current/model.joblib"
+          s3 = boto3.client("s3")
+          s3.upload_file("models/model.joblib", bucket, key)
+          s3.upload_file("src/serve.py", bucket, "deploy/current/serve.py")
+          print(f"Uploaded s3://{bucket}/{key}")
           PYEOF
 
       - name: Save report as artifact
@@ -119,24 +126,18 @@ jobs:
     steps:
 
       - name: Check quality gate
-        # TODO 6: Doc f1 tu output cua job train.
-        #         Neu f1 < 0.65, ket thuc voi loi ro rang.
-        #         Neu dat nguong, in thong bao va tiep tuc.
-        #
-        # Goi y:
-        #   f1 = float("${{ needs.train.outputs.f1 }}")
-        #   if f1 < 0.65:
-        #       raise SystemExit(f"FAILED: f1_score {f1:.4f} < 0.65. Huy trien khai.")
-        #   print("PASSED: dang trien khai model.")
         run: |
           python - <<'PYEOF'
-          # <dien code Python o day>
+          f1 = float("${{ needs.train.outputs.f1 }}")
+          if f1 < 0.65:
+              raise SystemExit(f"FAILED: f1_score {f1:.4f} < 0.65. Huy trien khai.")
+          print(f"PASSED: f1_score {f1:.4f} >= 0.65. Dang trien khai model.")
           PYEOF
 
 
   # ---------------------------------------------------------------------------
   # JOB 4 - RELEASE
-  # Trien khai len VM qua SSH.
+  # Trien khai len EC2 qua AWS Systems Manager, khong can mo cong SSH.
   # Chi chay khi Job 3 (Quality Gate) hoan thanh thanh cong.
   # ---------------------------------------------------------------------------
   release:
@@ -144,20 +145,26 @@ jobs:
     needs: quality-gate
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
 
-      - name: SSH deploy to VM
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Authenticate to AWS
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            # TODO 7: Restart service income-api tren VM.
-            # TODO 8: Cho server san sang roi goi curl /healthz de xac nhan.
-            #         Neu health check that bai sau nhieu lan thu, thoat voi exit 1.
-            #
-            # Goi y:
-            #   sudo systemctl restart income-api
-            #   sleep 5
-            #   curl -sf http://localhost:8080/healthz && echo "Health check passed." || exit 1
-            # <dien lenh bash o day>
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy through Systems Manager
+        run: |
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy income API from GitHub Actions" \
+            --parameters file://infra/aws/ssm-deploy-commands.json \
+            --query "Command.CommandId" \
+            --output text)
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$INSTANCE_ID"
+          aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$INSTANCE_ID"

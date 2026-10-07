@@ -1,0 +1,50 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetBucketLocation"
+      ],
+      "Resource": "arn:aws:s3:::income-lab-147435198681-2a202602794"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::income-lab-147435198681-2a202602794/dvc/*",
+        "arn:aws:s3:::income-lab-147435198681-2a202602794/artifacts/*",
+        "arn:aws:s3:::income-lab-147435198681-2a202602794/deploy/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": "ssm:SendCommand",
+      "Resource": "arn:aws:ssm:ap-southeast-1::document/AWS-RunShellScript"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "ssm:SendCommand",
+      "Resource": "arn:aws:ec2:ap-southeast-1:147435198681:instance/*",
+      "Condition": {
+        "StringEquals": {
+          "ssm:resourceTag/Project": "income-ml-cicd-lab"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ssm:GetCommandInvocation",
+        "ssm:ListCommands",
+        "ssm:ListCommandInvocations"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
